@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  password String
+  role     String  @default("USER") // "USER" или "ADMIN"
+  tests    Test[]
+}
+
+model Test {
+  id          Int     @id @default(autoincrement())
+  userId      Int
+  user        User    @relation(fields: [userId], references: [id])
+  type        String  // Например, "PCL-5"
+  score       Int
+  createdAt   DateTime @default(now())
+}
+
+model TestTemplate {
+  id       String   @id @default(uuid())
+  name     String   // "PCL-5", "Шкала депрессии Бека" и т.д.
+  questions Question[]
+}
+
+model Question {
+  id       String   @id @default(uuid())
+  text     String
+  options  Json?    // { min: 0, max: 4 } или варианты ["Да", "Нет"]
+  testId   String
+  test     TestTemplate @relation(fields: [testId], references: [id])
+}
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  token     String   @unique
+  expiresAt DateTime
+}
