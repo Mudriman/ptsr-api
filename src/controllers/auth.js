@@ -11,17 +11,25 @@ export const register = async (req, res) => {
 
   try {
     const user = await prisma.user.create({
-      data: { email, password: hashedPassword },
+      data: { 
+        email, 
+        password: hashedPassword,
+        role: 'USER' // Явно указываем роль по умолчанию
+      },
+      select: { // Возвращаем только нужные поля
+        id: true,
+        email: true,
+        role: true
+      }
     });
 
-    await sendEmail(
-      req.body.email,
-      'Добро пожаловать в PTSD Therapy',
-      'Вы успешно зарегистрировались!'
-    )
+    await sendEmail(email, 'Добро пожаловать', 'Вы успешно зарегистрировались!');
 
     const token = generateToken(user.id);
-    res.json({ token });
+    res.json({ 
+      token,
+      user // Добавляем данные пользователя в ответ
+    });
   } catch (err) {
     res.status(400).json({ error: 'User already exists' });
   }
@@ -29,14 +37,29 @@ export const register = async (req, res) => {
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({ 
+    where: { email },
+    select: { // Добавляем выбор конкретных полей
+      id: true,
+      email: true,
+      password: true,
+      role: true
+    }
+  });
 
   if (!user || !comparePassword(password, user.password)) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
   const token = generateToken(user.id);
-  res.json({ token });
+  res.json({ 
+    token,
+    user: { // Возвращаем данные пользователя
+      id: user.id,
+      email: user.email,
+      role: user.role
+    }
+  });
 };
 
 export const requestPasswordReset = async (req, res) => {

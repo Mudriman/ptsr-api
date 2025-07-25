@@ -1,4 +1,8 @@
 import { verifyToken } from '../config/auth.js';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
 
 export const authMiddleware = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];

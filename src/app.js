@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.js';
 import testRoutes from './routes/tests.js';
 import adminRoutes from './routes/admin.js';
 import feedbackRoutes from './routes/feedback.js'
+import profileRoutes from './routes/profile.js'
 
 dotenv.config();
 const app = express();
@@ -16,7 +17,8 @@ app.use(express.json());
 app.use('/admin', adminRoutes);
 app.use('/auth', authRoutes);
 app.use('/tests', testRoutes);
-app.use('/feedback', feedbackRoutes)
+app.use('/feedback', feedbackRoutes),
+app.use('/profile', profileRoutes)
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

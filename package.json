@@ -32,6 +32,6 @@
     "nodemon": "^3.1.10"
   },
   "prisma": {
-    "seed": "node --experimental-modules prisma/seed.js"
+    "seed": "node prisma/seed.js"
   }
 }

@@ -9,7 +9,7 @@ async function main() {
     update: {},
     create: {
       email: 'admin@example.com',
-      password: hashPassword('admin123'),
+      password: hashPassword('ADmin123'),
       role: 'ADMIN'
     }
   })
