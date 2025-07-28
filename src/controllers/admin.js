@@ -43,31 +43,28 @@ export const getUserTests = async (req, res) => {
 };
 
 export const deleteUser = async (req, res) => {
-  const userId = parseInt(req.userId); // Преобразуем в число, так как id — Int
+  const targetId = parseInt(req.params.id); // ← ID пользователя, которого удаляем
+  const currentUserId = parseInt(req.userId); // ← ID текущего авторизованного пользователя
+
   try {
-    // Проверка корректности ID
-    if (isNaN(userId)) {
+    if (isNaN(targetId)) {
       return res.status(400).json({ success: false, error: "Некорректный ID пользователя" });
     }
 
-    // Проверка, не пытается ли пользователь удалить сам себя
-    if (req.user.id === userId) {
+    if (currentUserId === targetId) {
       return res.status(400).json({ success: false, error: "Нельзя удалить самого себя" });
     }
 
-    // Проверка существования пользователя
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({ where: { id: targetId } });
     if (!user) {
       return res.status(404).json({ success: false, error: "Пользователь не найден" });
     }
 
-    // Удаление связанных тестов и пользователя в транзакции
     await prisma.$transaction([
-      prisma.test.deleteMany({ where: { userId } }),
-      prisma.user.delete({ where: { id: userId } }),
+      prisma.test.deleteMany({ where: { userId: targetId } }),
+      prisma.user.delete({ where: { id: targetId } }),
     ]);
 
-    // Успешный ответ
     res.json({ success: true });
   } catch (err) {
     console.error("Ошибка при удалении пользователя:", err);

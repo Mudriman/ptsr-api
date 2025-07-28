@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit'
 import { submitFeedback } from '../controllers/feedback.js'
 import { validate } from '../middleware/validate.js'
 import { feedbackSchema } from '../validation/schemas.js'
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router()
 
@@ -21,6 +22,7 @@ const feedbackLimiter = rateLimit({
 })
 
 router.post('/', 
+  authMiddleware,
   validate(feedbackSchema), 
   feedbackLimiter, 
   submitFeedback
