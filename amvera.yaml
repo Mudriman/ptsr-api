@@ -1,0 +1,13 @@
+version: 1
+environment: docker
+build:
+  dockerfile: Dockerfile
+run:
+  image: auto
+  command: ["npm", "run", "start"]
+  containerPort: 5000
+env:
+  - name: JWT_SECRET
+    value: ваш_ключ
+  - name: DATABASE_URL
+    value: postgresql://user:pass@host:5432/db
