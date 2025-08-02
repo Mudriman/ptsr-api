@@ -5,11 +5,10 @@ import { authSchema, requestResetSchema, resetPasswordSchema } from '../validati
 
 const router = express.Router();
 
-router.post('/register', validate(authSchema), register);
-router.post('/login', validate(authSchema), login);
+router.post('/register', validate(authSchema, { checkEmailUnique: true }), register);
+router.post('/login', validate(authSchema, { checkUserExists: true, checkPassword: true }), login);
 router.post('/request-reset', validate(requestResetSchema), requestPasswordReset);
-router.post('/reset-password', validate(resetPasswordSchema), resetPassword);
-
+router.post('/reset-password', validate(resetPasswordSchema, { checkResetToken: true }), resetPassword);
 
 
 export default router;

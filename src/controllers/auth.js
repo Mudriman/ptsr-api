@@ -8,171 +8,79 @@ const prisma = new PrismaClient();
 // === Register ===
 export const register = async (req, res) => {
   const { email, password } = req.body;
+  const hashedPassword = hashPassword(password);
 
-  try {
-    const hashedPassword = hashPassword(password);
-
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        role: 'USER'
-      },
-      select: {
-        id: true,
-        email: true,
-        role: true
-      }
-    });
-
-    await sendEmail(email, 'Добро пожаловать', 'Вы успешно зарегистрировались!');
-    const token = generateToken(user.id);
-
-    res.json({ token, user });
-
-  } catch (err) {
-    if (err.code === 'P2002') { // Prisma уникальность
-      return res.status(400).json({
-        error: 'Validation failed',
-        details: 'Пользователь с таким email уже существует'
-      });
+  const user = await prisma.user.create({
+    data: {
+      email,
+      password: hashedPassword,
+      role: 'USER'
+    },
+    select: {
+      id: true,
+      email: true,
+      role: true
     }
+  });
 
-    console.error('Register error:', err);
-    res.status(500).json({
-      error: 'Internal server error',
-      details: 'Не удалось завершить регистрацию'
-    });
-  }
+  await sendEmail(email, 'Добро пожаловать', 'Вы успешно зарегистрировались!');
+  const token = generateToken(user.id);
+
+  res.json({ token, user });
 };
 
 // === Login ===
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { id, email, role } = req.validatedUser;
+  const token = generateToken(id);
 
-  try {
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: {
-        id: true,
-        email: true,
-        password: true,
-        role: true
-      }
-    });
-
-    if (!user || !comparePassword(password, user.password)) {
-      return res.status(401).json({
-        error: 'Invalid credentials',
-        details: 'Неверный email или пароль'
-      });
-    }
-
-    const token = generateToken(user.id);
-
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role
-      }
-    });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({
-      error: 'Internal server error',
-      details: 'Не удалось войти в систему'
-    });
-  }
+  res.json({
+    token,
+    user: { id, email, role }
+  });
 };
 
 // === Request Password Reset ===
 export const requestPasswordReset = async (req, res) => {
   const { email } = req.body;
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return res.status(400).json({
-      error: 'Validation failed',
-      details: 'Некорректный email'
-    });
-  }
+  await prisma.passwordResetToken.deleteMany({ where: { email } });
 
-  try {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return res.json({
-        message: 'Если email зарегистрирован, вы получите письмо'
-      });
-    }
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 3600000);
 
-    await prisma.passwordResetToken.deleteMany({ where: { email } });
+  await prisma.passwordResetToken.create({
+    data: { email, token, expiresAt }
+  });
 
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 3600000);
+  const resetUrl = new URL('/reset_password', process.env.FRONTEND_URL);
+  resetUrl.searchParams.set('token', token);
 
-    await prisma.passwordResetToken.create({
-      data: { email, token, expiresAt }
-    });
+  const emailText = `Запрошен сброс пароля для аккаунта ${email}.
+  Сбросить пароль: ${resetUrl.toString()}
+  Ссылка действительна 1 час.
+  Если вы не запрашивали сброс, проигнорируйте это письмо.`;
 
-    const resetUrl = new URL('/reset_password', process.env.FRONTEND_URL);
-    resetUrl.searchParams.set('token', token);
+  await sendEmail(email, 'Сброс пароля', emailText);
 
-    const emailText = `Запрошен сброс пароля для аккаунта ${email}.
-    Сбросить пароль: ${resetUrl.toString()}
-    Ссылка действительна 1 час.
-    Если вы не запрашивали сброс, проигнорируйте это письмо.`;
-
-    await sendEmail(email, 'Сброс пароля', emailText);
-
-    res.json({ message: 'Если email зарегистрирован, вы получите письмо' });
-
-  } catch (err) {
-    console.error('Password reset request error:', err);
-    res.status(500).json({
-      error: 'Internal server error',
-      details: 'Не удалось отправить ссылку для сброса пароля'
-    });
-  }
+  res.json({ message: 'Если email зарегистрирован, вы получите письмо' });
 };
 
 // === Reset Password ===
 export const resetPassword = async (req, res) => {
-  const { token, newPassword } = req.body;
+  const { newPassword } = req.body;
+  const { email, id } = req.validatedToken;
 
-  try {
-    const resetToken = await prisma.passwordResetToken.findFirst({
-      where: {
-        token,
-        expiresAt: { gt: new Date() }
-      }
-    });
+  const hashedPassword = hashPassword(newPassword);
 
-    if (!resetToken) {
-      return res.status(400).json({
-        error: 'Invalid or expired token',
-        details: 'Ссылка на сброс пароля недействительна или устарела'
-      });
-    }
+  await prisma.user.update({
+    where: { email },
+    data: { password: hashedPassword }
+  });
 
-    const hashedPassword = hashPassword(newPassword);
+  await prisma.passwordResetToken.delete({
+    where: { id }
+  });
 
-    await prisma.user.update({
-      where: { email: resetToken.email },
-      data: { password: hashedPassword }
-    });
-
-    await prisma.passwordResetToken.delete({
-      where: { id: resetToken.id }
-    });
-
-    res.json({ message: 'Пароль успешно изменен' });
-
-  } catch (err) {
-    console.error('Reset password error:', err);
-    res.status(500).json({
-      error: 'Internal server error',
-      details: 'Не удалось изменить пароль'
-    });
-  }
+  res.json({ message: 'Пароль успешно изменен' });
 };
