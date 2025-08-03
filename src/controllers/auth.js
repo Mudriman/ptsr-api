@@ -4,6 +4,7 @@ import { sendEmail } from '../services/email.js';
 import crypto from 'crypto';
 
 const prisma = new PrismaClient();
+export const blacklistedTokens = new Set();
 
 // === Register ===
 export const register = async (req, res) => {
@@ -83,4 +84,17 @@ export const resetPassword = async (req, res) => {
   });
 
   res.json({ message: 'Пароль успешно изменен' });
+};
+
+// === Logout ===
+export const logout = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token) {
+      blacklistedTokens.add(token);
+    }
+    res.status(200).json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Logout failed' });
+  }
 };
