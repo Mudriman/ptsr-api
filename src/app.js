@@ -17,8 +17,11 @@ app.use(express.json());
 app.use('/admin', adminRoutes);
 app.use('/auth', authRoutes);
 app.use('/tests', testRoutes);
-app.use('/feedback', feedbackRoutes),
-app.use('/profile', profileRoutes)
+app.use('/feedback', feedbackRoutes);
+app.use('/profile', profileRoutes);
+app.get('/', (req, res) => {
+  res.send('API is alive');
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
