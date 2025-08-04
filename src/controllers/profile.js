@@ -1,5 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import prisma from '../config/prisma-client.js';
 
 export const saveTestResult = async (req, res) => {
   const { type, score } = req.body;

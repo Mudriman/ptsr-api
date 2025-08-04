@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client'
 import { sendEmail } from '../services/email.js'
-
-const prisma = new PrismaClient()
+import prisma from '../config/prisma-client.js';
 
 export const submitFeedback = async (req, res) => {
   const { email, message } = req.body

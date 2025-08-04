@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../config/prisma-client.js';
 
 export const getAllUsers = async (req, res) => {
   const page = parseInt(req.query.page) || 1;

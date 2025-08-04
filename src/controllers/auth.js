@@ -1,9 +1,8 @@
-import { PrismaClient } from '@prisma/client';
 import { hashPassword, comparePassword, generateToken } from '../config/auth.js';
 import { sendEmail } from '../services/email.js';
 import crypto from 'crypto';
+import prisma from '../config/prisma-client.js';
 
-const prisma = new PrismaClient();
 export const blacklistedTokens = new Set();
 
 // === Register ===

@@ -1,5 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import prisma from '../config/prisma-client.js';
 
 export const getTests = async (req, res) => {
   const tests = await prisma.testTemplate.findMany();
@@ -34,7 +33,7 @@ export const submitTest = async (req, res) => {
   res.json(result);
 };
 
-// Добавьте этот экспорт, если его нет
+
 export const getResults = async (req, res) => {
   const tests = await prisma.test.findMany({
     where: { userId: req.userId },

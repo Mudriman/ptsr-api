@@ -1,8 +1,6 @@
 import { ZodError } from 'zod';
-import { PrismaClient } from '@prisma/client';
 import { comparePassword } from '../config/auth.js';
-
-const prisma = new PrismaClient();
+import prisma from '../config/prisma-client.js';
 
 export const validate = (schema, options = {}) => async (req, res, next) => {
   try {
